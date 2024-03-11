@@ -157,9 +157,9 @@ static bool ORDERED;  // true if the vertices of the domain/source digraph
                       // should be considered in a different order than they are
                       // given, false otherwise.
 
-static BitArray* BIT_ARRAY_BUFFER[MAXVERTS];  // A buffer
+static BitArray** BIT_ARRAY_BUFFER = NULL;  // A buffer
 static BitArray* IMAGE_RESTRICT;              // Values in MAP must be in this
-static BitArray* MAP_UNDEFINED[MAXVERTS];     // Undefined positions in MAP
+static BitArray** MAP_UNDEFINED = NULL;     // Undefined positions in MAP
 static BitArray* ORB_LOOKUP;                  // points in orbit
 static BitArray* VALS;                        // Values in MAP already
 
@@ -173,20 +173,21 @@ static Digraph* DIGRAPH2;
 static Graph* GRAPH1;  // Graphs to hold incoming GAP symmetric digraphs
 static Graph* GRAPH2;
 
-static BlissGraph* BLISS_GRAPH[3 * MAXVERTS];
+static BlissGraph** BLISS_GRAPH = NULL;
 
-static uint16_t MAP[MAXVERTS];            // partial image list
-static uint16_t COLORS2[MAXVERTS];        // colors of range (di)graph
-static uint16_t INVERSE_ORDER[MAXVERTS];  // external -> internal
-static uint16_t MAP_BUFFER[MAXVERTS];     // For converting from internal ->
+static uint16_t* MAP = NULL;            // partial image list
+static uint16_t* COLORS2 = NULL;        // colors of range (di)graph
+static uint16_t* INVERSE_ORDER = NULL;  // external -> internal
+static uint16_t* MAP_BUFFER = NULL;     // For converting from internal ->
                                           // external and back when calling the
                                           // hook functions.
-static uint16_t ORB[MAXVERTS];    // Array for containing nodes in an orbit.
-static uint16_t ORDER[MAXVERTS];  // internal -> external
+static uint16_t* ORB = NULL;    // Array for containing nodes in an orbit.
+static uint16_t* ORDER = NULL;  // internal -> external
 
-static PermColl*     STAB_GENS[MAXVERTS];  // stabiliser generators
+static PermColl**     STAB_GENS = NULL;  // stabiliser generators
 static SchreierSims* SCHREIER_SIMS;
 
+static uint16_t CURRENT_MAX_VERTS = 0;
 #ifdef DIGRAPHS_ENABLE_STATS
 struct homo_stats_struct {
   time_t last_print;
@@ -339,7 +340,7 @@ static void init_digraph_from_digraph_obj(Digraph* const digraph,
   DIGRAPHS_ASSERT(CALL_1ARGS(IsDigraph, digraph_obj) == True);
   UInt const nr  = DigraphNrVertices(digraph_obj);
   Obj        out = FuncOutNeighbours(0L, digraph_obj);
-  DIGRAPHS_ASSERT(nr < MAXVERTS);
+  // DIGRAPHS_ASSERT(nr < MAXVERTS);
   DIGRAPHS_ASSERT(IS_PLIST(out));
   clear_digraph(digraph, nr);
 
@@ -374,7 +375,7 @@ static void init_graph_from_digraph_obj(Graph* const graph,
   DIGRAPHS_ASSERT(CALL_1ARGS(IsSymmetricDigraph, digraph_obj) == True);
   UInt const nr  = DigraphNrVertices(digraph_obj);
   Obj        out = FuncOutNeighbours(0L, digraph_obj);
-  DIGRAPHS_ASSERT(nr < MAXVERTS);
+  // DIGRAPHS_ASSERT(nr < MAXVERTS);
   DIGRAPHS_ASSERT(IS_PLIST(out));
   clear_graph(graph, nr);
 
@@ -641,6 +642,14 @@ static void find_graph_homos(uint16_t        depth,
       STORE_MIN_BREAK(min, next, n, i);
     }
   }
+  printf("\n");
+  printf("%u\n", MAXVERTS);
+  printf("%u\n", GRAPH1->nr_vertices);
+  printf("%u\n", GRAPH2->nr_vertices);
+  printf("%u\n", next);
+  printf("%u\n", depth);
+  printf("%u\n", GRAPH1->neighbours[pos]);
+  print_bit_array(MAP_UNDEFINED[depth]);
   DIGRAPHS_ASSERT(get_bit_array(MAP_UNDEFINED[depth], next));
 
   if (rank < hint) {
@@ -1588,6 +1597,7 @@ static void init_partial_map_and_find_digraph_homos(Obj partial_map_obj,
 // finding homomorphisms. If true is returned everything was initialised ok, if
 // false is returned, then the arguments already imply that there can be no
 // homomorphisms.
+static bool is_initialized = false;  // did we call this method before?
 static bool init_data_from_args(Obj digraph1_obj,
                                 Obj digraph2_obj,
                                 Obj hook_obj,
@@ -1601,14 +1611,19 @@ static bool init_data_from_args(Obj digraph1_obj,
                                 Obj colors2_obj,
                                 Obj order_obj,
                                 Obj aut_grp_obj) {
-  static bool is_initialized = false;  // did we call this method before?
   if (!is_initialized) {
     // srand(time(0));
     is_initialized = true;
 #ifdef DIGRAPHS_ENABLE_STATS
     STATS = malloc(sizeof(HomoStats));
 #endif
-
+    LARGEST_GRAPH_VERTEX_COUNT = MAX(
+      DigraphNrVertices(digraph1_obj),
+      DigraphNrVertices(digraph2_obj)
+    );
+    CALCULATED_MAXVERTS = MAX(CURRENT_MAX_VERTS, LARGEST_GRAPH_VERTEX_COUNT);
+    set_maxverts(CALCULATED_MAXVERTS);
+  
     DIGRAPH1 = new_digraph(MAXVERTS);
     DIGRAPH2 = new_digraph(MAXVERTS);
 
@@ -1618,6 +1633,17 @@ static bool init_data_from_args(Obj digraph1_obj,
     IMAGE_RESTRICT = new_bit_array(MAXVERTS);
     ORB_LOOKUP     = new_bit_array(MAXVERTS);
     REPS           = malloc(MAXVERTS * sizeof(BitArray*));
+    BIT_ARRAY_BUFFER = (BitArray**)calloc(MAXVERTS, sizeof(BitArray*));
+    MAP_UNDEFINED = (BitArray**)calloc(MAXVERTS, sizeof(BitArray*));
+    BLISS_GRAPH = (BlissGraph**)calloc(3*MAXVERTS, sizeof(BlissGraph*));
+    MAP = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+    COLORS2 = (uint16_t*)calloc(CALCULATED_MAXVERTS, sizeof(uint16_t));
+    INVERSE_ORDER = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+    MAP_BUFFER = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+    ORB = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+    ORDER = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+    STAB_GENS = (PermColl**)calloc(MAXVERTS, sizeof(PermColl*));
+
     for (uint16_t i = 0; i < MAXVERTS; i++) {
       BLISS_GRAPH[i]      = bliss_digraphs_new(i);
       REPS[i]             = new_bit_array(MAXVERTS);
@@ -1627,7 +1653,7 @@ static bool init_data_from_args(Obj digraph1_obj,
     }
     VALS          = new_bit_array(MAXVERTS);
     CONDITIONS    = new_conditions(MAXVERTS, MAXVERTS);
-    SCHREIER_SIMS = new_schreier_sims();
+    SCHREIER_SIMS = new_schreier_sims(MAXVERTS);
   }
 #ifdef DIGRAPHS_ENABLE_STATS
   clear_stats(STATS);
@@ -1821,6 +1847,74 @@ static bool init_data_from_args(Obj digraph1_obj,
   return true;
 }
 
+static bool clear_initialised_structures(){
+  free(DIGRAPH1);
+  free(DIGRAPH2);
+  free(GRAPH1);
+  free(GRAPH2);
+
+  // TODO: CLEAR THE BIT ARRAYS
+  free(IMAGE_RESTRICT);
+  free(ORB_LOOKUP);
+  // IMAGE_RESTRICT = new_bit_array(CALCULATED_MAXVERTS);
+  // ORB_LOOKUP     = new_bit_array(CALCULATED_MAXVERTS);
+  REPS           = malloc(MAXVERTS * sizeof(BitArray*));
+  BIT_ARRAY_BUFFER = (BitArray**)calloc(MAXVERTS, sizeof(BitArray*));
+  MAP_UNDEFINED = (BitArray**)calloc(MAXVERTS, sizeof(BitArray*));
+  BLISS_GRAPH = (BlissGraph**)calloc(3*MAXVERTS, sizeof(BlissGraph*));
+  MAP = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+  COLORS2 = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+  INVERSE_ORDER = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+  MAP_BUFFER = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+  ORB = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+  ORDER = (uint16_t*)calloc(MAXVERTS, sizeof(uint16_t));
+  STAB_GENS = (PermColl**)calloc(MAXVERTS, sizeof(PermColl*));
+
+  for (uint16_t i = 0; i < MAXVERTS; i++) {
+    // Memory leaks here
+    // BLISS_GRAPH[i]      = bliss_digraphs_new(i);
+    free_bit_array(REPS[i]);
+    free_bit_array(BIT_ARRAY_BUFFER[i]);
+    free_bit_array(MAP_UNDEFINED[i]);
+    // STAB_GENS[i] = new_perm_coll(CALCULATED_MAXVERTS, CALCULATED_MAXVERTS);
+  }
+  free(BLISS_GRAPH);
+  free(REPS);
+  free(BIT_ARRAY_BUFFER);
+  free(STAB_GENS);
+  free_bit_array(VALS);
+  SCHREIER_SIMS = new_schreier_sims();
+}
+
+// CODE GOES HERE
+static void free_homos_data(){
+    // srand(time(0));
+#ifdef DIGRAPHS_ENABLE_STATS
+    free(STATS);
+#endif
+    free(DIGRAPH1);
+    free(DIGRAPH2);
+    free(GRAPH1);
+    free(GRAPH2);
+    free(IMAGE_RESTRICT);
+    ORB_LOOKUP     = new_bit_array(MAXVERTS);
+    for (uint16_t i = 0; i < MAXVERTS; i++) {
+      free(BLISS_GRAPH[i]);
+      free(REPS[i]);
+      free(BIT_ARRAY_BUFFER[i]);
+      free(MAP_UNDEFINED[i]);
+      free(STAB_GENS[i]);
+    }
+    free(BLISS_GRAPH);
+    free(REPS);
+    free(BIT_ARRAY_BUFFER);
+    free(MAP_UNDEFINED);
+    free(STAB_GENS);
+    free(VALS);
+    free(CONDITIONS);
+    free(SCHREIER_SIMS);
+    is_initialized = false;
+}
 // The next function is the main function for accessing the homomorphisms code.
 //
 // The arguments are:

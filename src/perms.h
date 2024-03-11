@@ -24,12 +24,16 @@
 // GAP headers
 #include "compiled.h"
 
-#define MAXVERTS 512
-#define UNDEFINED MAXVERTS + 1
-
 // smallest positive integer that doesn't fit into a small integer object
 #define SMALLINTLIMIT (INT_INTOBJ_MAX + 1)
 
+#ifndef PERM_CONSTANTS_H
+#define PERM_CONSTANTS_H
+extern uint16_t MAXVERTS;
+extern uint16_t UNDEFINED;
+#endif
+
+void set_maxverts(uint16_t maxverts);
 typedef uint16_t* Perm;
 
 Perm new_perm(uint16_t const);
@@ -95,6 +99,7 @@ typedef struct perm_coll PermColl;
 PermColl* new_perm_coll(uint16_t const, uint16_t const);
 
 static inline void clear_perm_coll(PermColl* coll) {
+  // TODO make this actually clear
   coll->size = 0;
 }
 

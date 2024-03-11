@@ -27,13 +27,13 @@ typedef UInt Block;
 
 #define NUMBER_BITS_PER_BLOCK (sizeof(Block) * CHAR_BIT)
 
-#ifndef MAXVERTS
-#define MAXVERTS 512
+#ifndef LOOKUPSIZE
+#define LOOKUPSIZE 512
 #endif
 
 #if SYS_IS_64_BIT
 // To avoid division and mod
-static size_t const NR_BLOCKS_LOOKUP[MAXVERTS + 1] = {
+static size_t const NR_BLOCKS_LOOKUP[LOOKUPSIZE + 1] = {
     0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -56,7 +56,7 @@ static size_t const NR_BLOCKS_LOOKUP[MAXVERTS + 1] = {
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8};
 
-static size_t const REMAINDER[MAXVERTS + 1] = {
+static size_t const REMAINDER[LOOKUPSIZE + 1] = {
     0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18,
     19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
     38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
@@ -85,7 +85,7 @@ static size_t const REMAINDER[MAXVERTS + 1] = {
     27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
     46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 0};
 
-static size_t const QUOTIENT[MAXVERTS + 1] = {
+static size_t const QUOTIENT[LOOKUPSIZE + 1] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -173,7 +173,7 @@ static const Block MASK[NUMBER_BITS_PER_BLOCK] = {0x1,
                                                   0x4000000000000000,
                                                   0x8000000000000000};
 #else
-static size_t const NR_BLOCKS_LOOKUP[MAXVERTS + 1] = {
+static size_t const NR_BLOCKS_LOOKUP[LOOKUPSIZE + 1] = {
     0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,
     2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
@@ -202,7 +202,7 @@ static size_t const NR_BLOCKS_LOOKUP[MAXVERTS + 1] = {
     15, 15, 15, 15, 15, 15, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
     16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16};
 
-static size_t const REMAINDER[MAXVERTS + 1] = {
+static size_t const REMAINDER[LOOKUPSIZE + 1] = {
     0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18,
     19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 0,  1,  2,  3,  4,  5,
     6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
@@ -231,7 +231,7 @@ static size_t const REMAINDER[MAXVERTS + 1] = {
     27, 28, 29, 30, 31, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13,
     14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 0};
 
-static size_t const QUOTIENT[MAXVERTS + 1] = {
+static size_t const QUOTIENT[LOOKUPSIZE + 1] = {
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
@@ -355,7 +355,7 @@ static inline void union_bit_arrays(BitArray* const       bit_array1,
     bit_array1->blocks[i] |= bit_array2->blocks[i];
   }
 }
-
+void print_bit_array(BitArray const* const bit_array);
 //! Sets \p bit_array1 to be 0 in every position that \p bit_array2 is 1.
 static inline void complement_bit_arrays(BitArray* const       bit_array1,
                                          BitArray const* const bit_array2,
